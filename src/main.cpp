@@ -58,7 +58,7 @@ void CatapultStart()
 
 void Catapult()
 {
-  if (CataPultOn)
+  if (!CataPultOn)
   {
     CatapultStart();
     CataPultOn = true;
@@ -115,7 +115,7 @@ void autonomous(void) {
 /*---------------------------------------------------------------------------*/
 
 void usercontrol(void) {
-  Controller1.ButtonL1.pressed(Catapult);
+  Controller1.ButtonL2.pressed(Catapult);
   Controller1.ButtonUp.pressed(liftUp);
   Controller1.ButtonDown.pressed(liftDown);
 
