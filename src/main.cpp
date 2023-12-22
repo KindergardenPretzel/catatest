@@ -22,10 +22,78 @@ competition Competition;
 
 motor Cata = motor(PORT3);
 motor Lift = motor(PORT5);
+
+motor MotorLF = motor(PORT20, ratio18_1, true); // reversed 
+motor MotorLB = motor(PORT19, ratio18_1, true); // reversed
+motor MotorRF = motor(PORT11, ratio18_1, false); // forward direction
+motor MotorRB = motor(PORT12, ratio18_1, false); // forward direction
+
+motor_group LeftMotors = motor_group(MotorLF, MotorLB);
+motor_group RightMotors = motor_group(MotorRF, MotorRB);
+
+
 brain Brain;
 digital_in CataStop = digital_in(Brain.ThreeWirePort.C);
 controller Controller1 = controller(primary);
 bool CataPultOn = false;
+
+int ShowMeInfo(){
+  while (true) {
+    Brain.Screen.setCursor(4,1);
+    Brain.Screen.print("Digital In C");
+    Brain.Screen.setCursor(5,1);
+    Brain.Screen.print(CataStop.value());
+
+    wait(25, msec);
+  } 
+  return 0;
+}
+
+
+void CatapultStop()
+{
+  Cata.setBrake(hold);
+  Cata.spin(forward, 6, vex::volt);
+  waitUntil(CataStop.value()==0);
+  Cata.stop(hold);
+  CataPultOn = false;
+
+};
+
+void CatapultStart()
+{
+  Cata.spin(forward, 8, vex::volt);
+  CataPultOn = true;
+};
+
+void Catapult()
+{
+  if (!CataPultOn)
+  {
+    CatapultStart();
+  }
+  else
+  {
+    CatapultStop();
+  };
+}
+ 
+
+
+void liftUp()
+{ 
+  Lift.spin(forward, 5, vex::volt);
+  waitUntil(!Controller1.ButtonUp.pressing());
+  Lift.stop(hold);
+}
+
+void liftDown()
+{
+  Lift.spin(reverse, 5, vex::volt);
+  waitUntil(!Controller1.ButtonDown.pressing());
+  Lift.stop(hold);
+}
+
 
 /*---------------------------------------------------------------------------*/
 /*                          Pre-Autonomous Functions                         */
@@ -38,52 +106,10 @@ bool CataPultOn = false;
 /*---------------------------------------------------------------------------*/
 
 void pre_auton(void) {
+  vex::task MyTask(ShowMeInfo);
 
   // All activities that occur before the competition starts
   // Example: clearing encoders, setting servo positions, ...
-}
-
-void CatapultStop()
-{
-  Cata.setBrake(hold);
-  Cata.spin(forward, 4, vex::volt);
-  waitUntil(CataStop.LOW);
-  Cata.stop(hold);
-};
-
-void CatapultStart()
-{
-  Cata.spin(forward, 7, vex::volt);
-};
-
-void Catapult()
-{
-  if (!CataPultOn)
-  {
-    CatapultStart();
-    CataPultOn = true;
-  }
-  else
-  {
-    CatapultStop();
-    CataPultOn = false;
-  };
-}
- 
-
-
-void liftUp()
-{ 
-  Lift.spin(forward, 4, vex::volt);
-  waitUntil(!Controller1.ButtonUp.pressing());
-  Lift.stop(hold);
-}
-
-void liftDown()
-{
-  Lift.spin(reverse, 4, vex::volt);
-  waitUntil(!Controller1.ButtonDown.pressing());
-  Lift.stop(hold);
 }
 
 /*---------------------------------------------------------------------------*/
@@ -115,20 +141,17 @@ void autonomous(void) {
 /*---------------------------------------------------------------------------*/
 
 void usercontrol(void) {
+    CatapultStop();
   Controller1.ButtonL2.pressed(Catapult);
   Controller1.ButtonUp.pressed(liftUp);
   Controller1.ButtonDown.pressed(liftDown);
-
+ 
   // User control code here, inside the loop
   while (1) {
-    // This is the main execution loop for the user control program.
-    // Each time through the loop your program should update motor + servo
-    // values based on feedback from the joysticks.
-
-    // ........................................................................
-    // Insert user code here. This is where you use the joystick values to
-    // update your motors, etc.
-    // ........................................................................
+    RightMotors.setVelocity((Controller1.Axis3.position() - Controller1.Axis1.position()), percent);
+    LeftMotors.setVelocity((Controller1.Axis1.position() + Controller1.Axis3.position()), percent);
+    RightMotors.spin(forward);
+    LeftMotors.spin(forward);
 
     wait(20, msec); // Sleep the task for a short amount of time to
                     // prevent wasted resources.
